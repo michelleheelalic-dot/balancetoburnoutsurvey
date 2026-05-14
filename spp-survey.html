@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wellbeing in Singapore</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0f0e0c;--bg2:#1a1815;--bg3:#211f1c;
+    --terra:#d4845a;--terra-l:#e8b48a;
+    --tdim:rgba(212,132,90,0.13);
+    --text:#e8e2d9;--dim:#9a9088;--dimmer:#5c5650;
+    --bdr:rgba(212,132,90,0.2);--bdr2:rgba(255,255,255,0.07);
+  }
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+  #progress-bar{position:fixed;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,0.05);z-index:999}
+  #progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--terra),var(--terra-l));transition:width .4s}
+  .page{display:none;max-width:700px;margin:0 auto;padding:72px 20px 100px}
+  .page.active{display:block}
+  .page-center{display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px}
+  .page-center.active{display:flex}
+  .label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--terra);font-weight:500;margin-bottom:12px}
+  h1{font-size:clamp(24px,4vw,36px);font-weight:400;line-height:1.25;margin-bottom:16px}
+  h1 em{font-style:italic;color:var(--terra-l)}
+  .desc{font-size:14px;line-height:1.8;color:var(--dim);margin-bottom:24px}
+  .meta{display:flex;gap:18px;flex-wrap:wrap;padding-bottom:28px;border-bottom:1px solid var(--bdr2);margin-bottom:36px}
+  .meta span{font-size:12px;color:var(--dimmer);display:flex;align-items:center;gap:6px}
+  .dot{width:4px;height:4px;border-radius:50%;background:var(--terra);display:inline-block}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:32px}
+  .flabel{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dimmer);margin-bottom:7px;font-weight:500}
+  input[type=text],input[type=number]{width:100%;padding:11px 14px;background:var(--bg2);border:1px solid var(--bdr2);border-radius:8px;color:var(--text);font-size:15px;font-family:inherit;outline:none;transition:border-color .2s}
+  input:focus{border-color:var(--terra)}
+  input.err{border-color:#e07070}
+  .errmsg{font-size:12px;color:#e07070;margin-top:5px}
+  .divider{display:flex;align-items:center;gap:12px;margin:28px 0}
+  .dvline{flex:1;height:1px;background:var(--bdr2)}
+  .dvlabel{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--dimmer)}
+  .qcard{background:var(--bg2);border:1px solid var(--bdr2);border-radius:12px;padding:22px;margin-bottom:14px;transition:border-color .2s}
+  .qcard.done{border-color:rgba(212,132,90,0.3)}
+  .qcard.invalid{border-color:rgba(224,112,112,0.4)}
+  .qmodel{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--terra);margin-bottom:9px;font-weight:500}
+  .qtext{font-size:15px;line-height:1.5;color:var(--text);margin-bottom:5px}
+  .qsub{font-size:12px;color:var(--dimmer);margin-bottom:16px;line-height:1.5}
+  .qnote{font-size:12px;color:var(--dimmer);margin-top:7px;font-style:italic}
+  .scale{display:flex;gap:6px;margin-top:14px}
+  .sbtn{flex:1;padding:9px 3px;background:var(--bg3);border:1px solid var(--bdr2);border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s;color:inherit}
+  .sbtn:hover,.sbtn.sel{background:var(--tdim);border-color:var(--terra)}
+  .snum{font-size:15px;font-weight:500;color:var(--terra-l)}
+  .slbl{font-size:9px;color:var(--dimmer);text-align:center;line-height:1.3}
+  .sbtn.sel .slbl{color:var(--terra)}
+  .choices{display:flex;flex-direction:column;gap:7px;margin-top:14px}
+  .cbtn{padding:11px 14px;background:var(--bg3);border:1px solid var(--bdr2);border-radius:8px;cursor:pointer;text-align:left;color:var(--text);font-size:14px;font-family:inherit;display:flex;align-items:center;gap:11px;transition:all .15s}
+  .cbtn:hover,.cbtn.sel{background:var(--tdim);border-color:var(--terra)}
+  .radio{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--dimmer);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+  .cbtn.sel .radio{border-color:var(--terra);background:var(--terra)}
+  .rdot{width:5px;height:5px;border-radius:50%;background:#fff}
+  textarea{width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--bdr2);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit;resize:vertical;min-height:90px;line-height:1.6;outline:none;margin-top:14px;transition:border-color .2s}
+  textarea:focus{border-color:var(--terra)}
+  .submit-area{margin-top:32px;text-align:center}
+  .qlabel{font-size:12px;color:var(--dimmer);margin-bottom:10px}
+  .qlabel b{color:var(--terra)}
+  .btn-main{width:100%;padding:15px;background:var(--terra);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;transition:background .2s}
+  .btn-main:hover{background:var(--terra-l)}
+  /* success */
+  .scard{background:var(--bg2);border:1px solid var(--bdr);border-radius:16px;padding:52px 36px;max-width:460px;width:100%;text-align:center}
+  .sicon{width:50px;height:50px;border-radius:50%;background:var(--tdim);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:20px;color:var(--terra)}
+  .scard h2{font-size:24px;font-weight:400;margin-bottom:10px}
+  .scard p{font-size:14px;color:var(--dim);line-height:1.7}
+  /* pin */
+  .pcard{background:var(--bg2);border:1px solid var(--bdr);border-radius:16px;padding:44px 36px;max-width:360px;width:100%;text-align:center}
+  .pcard h2{font-size:22px;font-weight:400;margin-bottom:8px}
+  .pcard p{font-size:13px;color:var(--dimmer);margin-bottom:26px}
+  #pin-input{width:100%;padding:13px 14px;background:var(--bg3);border:1px solid var(--bdr2);border-radius:8px;color:var(--text);font-size:22px;text-align:center;letter-spacing:.3em;outline:none;margin-bottom:12px;font-family:inherit;transition:border-color .2s}
+  #pin-input:focus{border-color:var(--terra)}
+  #pin-input.err{border-color:#e07070}
+  .btn-back{background:none;border:none;color:var(--dimmer);font-size:13px;cursor:pointer;font-family:inherit;margin-top:12px;display:block;width:100%}
+  .btn-back:hover{color:var(--terra)}
+  /* admin */
+  #admin-page{max-width:900px}
+  .admin-hdr{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:14px}
+  .admin-hdr h2{font-size:26px;font-weight:400}
+  .admin-hdr h2 em{color:var(--terra-l);font-style:italic}
+  .hdr-btns{display:flex;gap:8px;align-items:center}
+  .btn-sec{padding:8px 16px;background:transparent;border:1px solid var(--bdr);border-radius:8px;color:var(--dim);font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s}
+  .btn-sec:hover{border-color:var(--terra);color:var(--terra)}
+  .btn-exit{background:none;border:none;font-size:13px;color:var(--dimmer);cursor:pointer;font-family:inherit}
+  .btn-exit:hover{color:var(--terra)}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px}
+  .stat{background:var(--bg2);border:1px solid var(--bdr2);border-radius:10px;padding:18px}
+  .stat-n{font-size:28px;font-weight:300;color:var(--terra-l);margin-bottom:3px}
+  .stat-l{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--dimmer)}
+  .sec-title{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--dimmer);margin-bottom:14px;padding-bottom:9px;border-bottom:1px solid var(--bdr2)}
+  .chart-box{background:var(--bg2);border:1px solid var(--bdr2);border-radius:10px;padding:20px;margin-bottom:22px}
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .bar-lbl{font-size:12px;color:var(--dim);width:80px;flex-shrink:0}
+  .bar-bg{flex:1;background:var(--bg3);border-radius:4px;height:7px}
+  .bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--terra),var(--terra-l))}
+  .bar-val{font-size:12px;color:var(--terra);width:28px;text-align:right;flex-shrink:0}
+  .q9grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:22px}
+  .q9item{background:var(--bg2);border:1px solid var(--bdr2);border-radius:8px;padding:14px}
+  .q9lbl{font-size:12px;color:var(--dim);margin-bottom:7px;line-height:1.4}
+  .q9bg{background:var(--bg3);border-radius:4px;height:4px;margin-bottom:7px}
+  .q9fill{height:100%;border-radius:4px;background:var(--terra)}
+  .q9pct{font-size:17px;color:var(--terra-l);font-weight:300}
+  .q9cnt{font-size:12px;color:var(--dimmer)}
+  .resp-card{background:var(--bg2);border:1px solid var(--bdr2);border-radius:10px;margin-bottom:9px;overflow:hidden}
+  .resp-hdr{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .15s}
+  .resp-hdr:hover{background:var(--bg3)}
+  .resp-name{font-size:14px;font-weight:500}
+  .resp-meta{font-size:12px;color:var(--dimmer);margin-top:2px}
+  .resp-tog{font-size:11px;color:var(--dimmer)}
+  .resp-body{padding:0 18px 18px;display:none}
+  .resp-body.open{display:block}
+  .ritem{margin-bottom:12px;padding-top:12px;border-top:1px solid var(--bdr2)}
+  .rlbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--terra);margin-bottom:3px}
+  .rq{font-size:11px;color:var(--dimmer);margin-bottom:4px;line-height:1.4}
+  .rval{font-size:13px;color:var(--dim);line-height:1.6}
+  .empty{text-align:center;padding:50px 0;color:var(--dimmer);font-size:14px}
+  @media(max-width:560px){.grid2{grid-template-columns:1fr}.q9grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<div id="progress-bar"><div id="progress-fill"></div></div>
+
+<!-- SURVEY -->
+<div id="survey-page" class="page active">
+  <div class="label">School of Positive Psychology · Research</div>
+  <h1 id="survey-title">Wellbeing in Singapore — <em>how do you really see it?</em></h1>
+  <p class="desc">We are a research group from the School of Positive Psychology studying how under-40s in Singapore perceive wellbeing. This survey draws on two established models — PERMAH and Ryff's Psychological Wellbeing — to understand what matters to you, what you already do, and what gets in the way. Your responses are used for research purposes only.</p>
+  <div class="meta">
+    <span><span class="dot"></span>Time ~5 minutes</span>
+    <span><span class="dot"></span>Questions 14</span>
+    <span><span class="dot"></span>Data use: Research only</span>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <label class="flabel">Your name</label>
+      <input type="text" id="f-name" placeholder="First and last name" />
+      <div class="errmsg" id="err-name" style="display:none">Please enter your name.</div>
+    </div>
+    <div>
+      <label class="flabel">Your age</label>
+      <input type="number" id="f-age" placeholder="18–39" min="18" max="39" />
+      <div class="errmsg" id="err-age" style="display:none">Age must be between 18 and 39.</div>
+    </div>
+  </div>
+
+  <div class="divider"><div class="dvline"></div><span class="dvlabel">Survey Questions</span><div class="dvline"></div></div>
+
+  <div id="questions-container"></div>
+
+  <div class="submit-area">
+    <div class="qlabel"><b id="answered-count">0</b> of 14 questions answered</div>
+    <button class="btn-main" onclick="submitSurvey()">Submit my response</button>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div id="success-page" class="page-center">
+  <div class="scard">
+    <div class="sicon">✦</div>
+    <h2 id="success-name">Thank you.</h2>
+    <p>Your response has been recorded. We appreciate your honesty and time in contributing to this research on wellbeing among under-40s in Singapore.</p>
+  </div>
+</div>
+
+<!-- PIN -->
+<div id="pin-page" class="page-center">
+  <div class="pcard">
+    <div class="label">Admin Access</div>
+    <h2>Research Dashboard</h2>
+    <p>Enter your PIN to view survey results.</p>
+    <input type="password" id="pin-input" maxlength="6" placeholder="· · · ·" onkeydown="if(event.key==='Enter')checkPin()" />
+    <div class="errmsg" id="pin-err" style="display:none;margin-bottom:10px">Incorrect PIN. Try again.</div>
+    <button class="btn-main" onclick="checkPin()">Access Dashboard</button>
+    <button class="btn-back" onclick="showPage('survey')">← Back to survey</button>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="admin-page" class="page" style="max-width:900px">
+  <div class="admin-hdr">
+    <div>
+      <div class="label">School of Positive Psychology · Research</div>
+      <h2>Wellbeing Survey <em>Results</em></h2>
+    </div>
+    <div class="hdr-btns">
+      <button class="btn-sec" onclick="loadAdmin()">↺ Refresh</button>
+      <button class="btn-sec" onclick="downloadCSV()">↓ Download CSV</button>
+      <button class="btn-exit" onclick="showPage('survey')">← Exit</button>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-n" id="stat-total">0</div><div class="stat-l">Total responses</div></div>
+    <div class="stat"><div class="stat-n" id="stat-age">—</div><div class="stat-l">Average age</div></div>
+    <div class="stat"><div class="stat-n">100%</div><div class="stat-l">Completion rate</div></div>
+  </div>
+  <div class="chart-box">
+    <div class="sec-title">Average Scores · Q1–Q8, Q9a–Q9b (scale 1–5)</div>
+    <div id="bar-chart"></div>
+  </div>
+  <div class="sec-title">Q9 · Most important aspect of wellbeing</div>
+  <div class="q9grid" id="q9-grid"></div>
+  <div class="sec-title" id="resp-title">Individual Responses</div>
+  <div id="responses-list"></div>
+</div>
+
+<script>
+const STORAGE_KEY = "spp-wb-survey-v1";
+const ADMIN_PIN = "1234";
+
+const QUESTIONS = [
+  {id:"q1",model:"Positive Emotion · PERMAH",scale:["Rarely","Sometimes","Often","Frequently","Very often"],text:"In general, how often do you experience genuine positive emotions in daily life — joy, gratitude, or hope?",sub:"Not just the absence of stress, but actual moments of feeling good."},
+  {id:"q2",model:"Engagement · PERMAH & Ryff",scale:["Almost never","Rarely","Sometimes","Often","Almost always"],text:"How often do you feel genuinely absorbed in what you are doing — at work or in your personal life?"},
+  {id:"q3",model:"Autonomy · Ryff",scale:["Strongly disagree","Disagree","Neutral","Agree","Strongly agree"],text:"You feel you have real control over how you live your life — not just at work, but overall.",sub:"This relates to your sense of personal autonomy and independence."},
+  {id:"q4",model:"Relationships · PERMAH & Ryff",scale:["Strongly disagree","Disagree","Neutral","Agree","Strongly agree"],text:"You have people in your life — at work or outside — with whom you feel genuinely close and supported."},
+  {id:"q5",model:"Meaning & Purpose · PERMAH & Ryff",scale:["Not important","Slightly","Moderately","Very","Extremely important"],text:"How important is it to you to have a clear sense of purpose or direction in life?"},
+  {id:"q6",model:"Meaning & Purpose · PERMAH & Ryff",scale:["Not at all","A little","Somewhat","Quite a bit","A great deal"],text:"To what extent does your daily life feel meaningful beyond just getting things done?"},
+  {id:"q7",model:"Accomplishment & Growth · PERMAH & Ryff",scale:["Very little","A little","Somewhat","Considerably","Significantly"],text:"In the past year, how much have you actively grown — in skills, confidence, or self-understanding?"},
+  {id:"q8",model:"Health & Life Management · PERMAH & Ryff",scale:["Struggling","Getting by","Managing","Managing well","Managing well"],text:"Overall, how well are you managing the demands of your life — work, relationships, health, and responsibilities?"},
+  {id:"q9a",model:"Self-Acceptance · Ryff",scale:["Strongly disagree","Disagree","Neutral","Agree","Strongly agree"],text:"You feel at peace with who you are — including your past experiences, limitations, and imperfections.",sub:"This is about self-acceptance, not just self-confidence."},
+  {id:"q9b",model:"Environmental Mastery · Ryff",scale:["Strongly disagree","Disagree","Neutral","Agree","Strongly agree"],text:"You feel capable of shaping and managing your daily environment to suit your needs and values.",sub:"This relates to how well you feel you can navigate and influence the world around you."},
+  {id:"q9",type:"choice",model:"Most Important to You",text:"Which aspect of wellbeing matters most to you personally right now?",options:["Feeling positive and emotionally well","Being engaged and doing meaningful work","Having strong, close relationships","Having a clear sense of purpose in life","Growing and achieving things","Taking care of my physical health and energy"]},
+  {id:"q9c",type:"text",model:"Why It Matters",text:"Briefly explain why this aspect of wellbeing feels most important to you right now.",note:"There are no right or wrong answers — we are interested in your personal perspective."},
+  {id:"q10",type:"text",model:"Current Practices",text:"What do you actively do — or try to do — to maintain your wellbeing in Singapore's demanding environment?",note:"e.g. exercise, journalling, social activities, therapy, hobbies, rest"},
+  {id:"q11",type:"text",model:"Culture & Context",text:"In your view, is there anything unique about life in Singapore — whether cultural expectations, social pressures, or the local environment — that makes wellbeing harder to define or achieve? Something that feels important but is often overlooked.",note:"Be as honest as you like. This is for research purposes only."}
+];
+
+const answers = {};
+let tapCount = 0, tapTimer = null;
+
+// Secret admin trigger: tap the title 5 times
+document.getElementById('survey-title').addEventListener('click', function() {
+  tapCount++;
+  clearTimeout(tapTimer);
+  if (tapCount >= 5) { tapCount = 0; showPage('pin'); return; }
+  tapTimer = setTimeout(() => { tapCount = 0; }, 2500);
+});
+
+function showPage(name) {
+  document.querySelectorAll('.page,.page-center').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById(name + '-page');
+  if (el) el.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// Build questions
+function buildQuestions() {
+  const c = document.getElementById('questions-container');
+  QUESTIONS.forEach((q, i) => {
+    const card = document.createElement('div');
+    card.className = 'qcard';
+    card.id = 'card-' + q.id;
+    let inner = `<div class="qmodel">Q${i+1} · ${q.model}</div><div class="qtext">${q.text}</div>`;
+    if (q.sub) inner += `<div class="qsub">${q.sub}</div>`;
+    if (!q.type) {
+      inner += `<div class="scale">`;
+      for (let n=1;n<=5;n++) {
+        inner += `<button class="sbtn" id="s-${q.id}-${n}" onclick="setScale('${q.id}',${n})">
+          <span class="snum">${n}</span><span class="slbl">${q.scale[n-1]}</span>
+        </button>`;
+      }
+      inner += `</div>`;
+    } else if (q.type==='choice') {
+      inner += `<div class="choices">`;
+      q.options.forEach(opt => {
+        const safe = opt.replace(/'/g,"\\'");
+        inner += `<button class="cbtn" id="c-${q.id}-${encodeURIComponent(opt)}" onclick="setChoice('${q.id}','${safe}')">
+          <span class="radio"><span class="rdot" style="display:none"></span></span>${opt}
+        </button>`;
+      });
+      inner += `</div>`;
+    } else if (q.type==='text') {
+      inner += `<textarea id="t-${q.id}" rows="4" placeholder="Your response..." oninput="setTextAnswer('${q.id}',this.value)"></textarea>`;
+      if (q.note) inner += `<div class="qnote">${q.note}</div>`;
+    }
+    card.innerHTML = inner;
+    c.appendChild(card);
+  });
+}
+
+function setScale(id, val) {
+  answers[id] = val;
+  for (let n=1;n<=5;n++) {
+    const b = document.getElementById(`s-${id}-${n}`);
+    if (b) b.classList.toggle('sel', n===val);
+  }
+  updateCard(id); updateProgress();
+}
+
+function setChoice(id, val) {
+  answers[id] = val;
+  const q = QUESTIONS.find(q=>q.id===id);
+  q.options.forEach(opt => {
+    const b = document.getElementById(`c-${id}-${encodeURIComponent(opt)}`);
+    if (!b) return;
+    const sel = opt===val;
+    b.classList.toggle('sel', sel);
+    const dot = b.querySelector('.rdot');
+    if (dot) dot.style.display = sel ? 'block' : 'none';
+  });
+  updateCard(id); updateProgress();
+}
+
+function setTextAnswer(id, val) {
+  answers[id] = val.trim();
+  updateCard(id); updateProgress();
+}
+
+function updateCard(id) {
+  const card = document.getElementById('card-' + id);
+  if (!card) return;
+  const v = answers[id];
+  const done = v !== undefined && v !== null && v !== '';
+  card.classList.toggle('done', done);
+  card.classList.remove('invalid');
+}
+
+function updateProgress() {
+  const done = QUESTIONS.filter(q => {
+    const v = answers[q.id];
+    return v !== undefined && v !== null && v !== '';
+  }).length;
+  document.getElementById('answered-count').textContent = done;
+  const name = document.getElementById('f-name').value.trim();
+  const age = document.getElementById('f-age').value;
+  const pct = ((done + (name?0.5:0) + (age?0.5:0)) / 15) * 100;
+  document.getElementById('progress-fill').style.width = Math.min(pct,100) + '%';
+}
+
+document.getElementById('f-name').addEventListener('input', updateProgress);
+document.getElementById('f-age').addEventListener('input', updateProgress);
+
+function getSGTime() {
+  return new Date().toLocaleString('en-SG', {timeZone:'Asia/Singapore'});
+}
+
+async function submitSurvey() {
+  let valid = true;
+  const name = document.getElementById('f-name').value.trim();
+  const age = parseInt(document.getElementById('f-age').value, 10);
+  const nameErr = document.getElementById('err-name');
+  const ageErr = document.getElementById('err-age');
+  const nameInput = document.getElementById('f-name');
+  const ageInput = document.getElementById('f-age');
+
+  if (!name) {
+    nameErr.style.display='block'; nameInput.classList.add('err'); valid=false;
+  } else { nameErr.style.display='none'; nameInput.classList.remove('err'); }
+
+  if (!age || isNaN(age) || age<18 || age>39) {
+    ageErr.style.display='block'; ageInput.classList.add('err'); valid=false;
+  } else { ageErr.style.display='none'; ageInput.classList.remove('err'); }
+
+  QUESTIONS.forEach(q => {
+    const v = answers[q.id];
+    const missing = v===undefined || v===null || v==='';
+    const card = document.getElementById('card-'+q.id);
+    if (card) card.classList.toggle('invalid', missing);
+    if (missing) valid=false;
+  });
+
+  if (!valid) {
+    const firstInvalid = document.querySelector('.qcard.invalid');
+    if (firstInvalid) firstInvalid.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+
+  const response = {
+    id: Date.now(), name, age, timestamp: getSGTime(),
+    q1:answers.q1, q2:answers.q2, q3:answers.q3, q4:answers.q4,
+    q5:answers.q5, q6:answers.q6, q7:answers.q7, q8:answers.q8,
+    q9a:answers.q9a, q9b:answers.q9b,
+    q9:answers.q9, q9c:answers.q9c, q10:answers.q10, q11:answers.q11
+  };
+
+  try {
+    let existing = [];
+    try {
+      const res = await window.storage.get(STORAGE_KEY, true);
+      if (res && res.value) existing = JSON.parse(res.value);
+    } catch(e) {}
+    existing.push(response);
+    await window.storage.set(STORAGE_KEY, JSON.stringify(existing), true);
+  } catch(e) {
+    console.error('Storage error:', e);
+  }
+
+  document.getElementById('success-name').textContent = `Thank you, ${name.split(' ')[0]}.`;
+  showPage('success');
+}
+
+function checkPin() {
+  const v = document.getElementById('pin-input').value;
+  const err = document.getElementById('pin-err');
+  const inp = document.getElementById('pin-input');
+  if (v === ADMIN_PIN) {
+    err.style.display='none'; inp.classList.remove('err');
+    document.getElementById('pin-input').value='';
+    loadAdmin();
+    showPage('admin');
+  } else {
+    err.style.display='block'; inp.classList.add('err');
+    document.getElementById('pin-input').value='';
+  }
+}
+
+let allResponses = [];
+
+async function loadAdmin() {
+  try {
+    const res = await window.storage.get(STORAGE_KEY, true);
+    allResponses = (res && res.value) ? JSON.parse(res.value) : [];
+  } catch(e) { allResponses=[]; }
+  renderAdmin();
+}
+
+function renderAdmin() {
+  const total = allResponses.length;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-age').textContent = total
+    ? (allResponses.reduce((s,r)=>s+r.age,0)/total).toFixed(1) : '—';
+  document.getElementById('resp-title').textContent = `Individual Responses (${total})`;
+
+  const q8ids = ['q1','q2','q3','q4','q5','q6','q7','q8','q9a','q9b'];
+  const q8lbls = ['Q1 Emotion','Q2 Engage','Q3 Autonomy','Q4 Relations','Q5 Meaning','Q6 Purpose','Q7 Growth','Q8 Health','Q9a Self-Accept','Q9b Env.Mastery'];
+  let barHTML = '';
+  q8ids.forEach((id,i) => {
+    const vals = allResponses.map(r=>r[id]).filter(v=>typeof v==='number');
+    const avg = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length) : 0;
+    barHTML += `<div class="bar-row">
+      <span class="bar-lbl">${q8lbls[i]}</span>
+      <div class="bar-bg"><div class="bar-fill" style="width:${(avg/5)*100}%"></div></div>
+      <span class="bar-val">${avg?avg.toFixed(1):'—'}</span>
+    </div>`;
+  });
+  document.getElementById('bar-chart').innerHTML = barHTML;
+
+  const q9opts = QUESTIONS[8].options;
+  const q9counts = {};
+  q9opts.forEach(o=>{q9counts[o]=0});
+  allResponses.forEach(r=>{if(r.q9)q9counts[r.q9]=(q9counts[r.q9]||0)+1});
+  let q9HTML='';
+  q9opts.forEach(opt=>{
+    const cnt=q9counts[opt]||0;
+    const pct=total?Math.round((cnt/total)*100):0;
+    q9HTML+=`<div class="q9item">
+      <div class="q9lbl">${opt}</div>
+      <div class="q9bg"><div class="q9fill" style="width:${pct}%"></div></div>
+      <span class="q9pct">${pct}%</span><span class="q9cnt"> · ${cnt} ${cnt===1?'response':'responses'}</span>
+    </div>`;
+  });
+  document.getElementById('q9-grid').innerHTML = q9HTML || '<div class="empty">No responses yet.</div>';
+
+  let respHTML='';
+  if (total===0) {
+    respHTML='<div class="empty">No responses yet. Share the survey with participants to begin collecting data.</div>';
+  } else {
+    [...allResponses].reverse().forEach((r,i)=>{
+      let bodyHTML='';
+      QUESTIONS.forEach((q,qi)=>{
+        const val = r[q.id];
+        let display;
+        if (q.type === 'text') {
+          display = val || '—';
+        } else if (q.type === 'choice') {
+          display = val || '—';
+        } else {
+          display = val ? `${val} — ${q.scale[val-1]}` : '—';
+        }
+        bodyHTML+=`<div class="ritem">
+          <div class="rlbl">Q${qi+1} · ${q.model}</div>
+          <div class="rq">${q.text}</div>
+          <div class="rval">${display}</div>
+        </div>`;
+      });
+      respHTML+=`<div class="resp-card">
+        <div class="resp-hdr" onclick="toggleResp(${i})">
+          <div>
+            <div class="resp-name">${r.name}</div>
+            <div class="resp-meta">Age ${r.age} · ${r.timestamp}</div>
+          </div>
+          <div class="resp-tog" id="tog-${i}">▼ Expand</div>
+        </div>
+        <div class="resp-body" id="body-${i}">${bodyHTML}</div>
+      </div>`;
+    });
+  }
+  document.getElementById('responses-list').innerHTML = respHTML;
+}
+
+function toggleResp(i) {
+  const body = document.getElementById('body-'+i);
+  const tog = document.getElementById('tog-'+i);
+  const open = body.classList.toggle('open');
+  tog.textContent = open ? '▲ Collapse' : '▼ Expand';
+}
+
+function downloadCSV() {
+  const headers = ['Name','Age','Timestamp','Q1','Q2','Q3','Q4','Q5','Q6','Q7','Q8','Q9a Self-Acceptance','Q9b Env.Mastery','Q11 Most Important','Q11b Why It Matters','Q12 Current Practices','Q13 Culture & Context'];
+  const rows = allResponses.map(r=>[
+    `"${r.name}"`,r.age,`"${r.timestamp}"`,
+    r.q1,r.q2,r.q3,r.q4,r.q5,r.q6,r.q7,r.q8,r.q9a,r.q9b,
+    `"${(r.q9||'').replace(/"/g,'""')}"`,
+    `"${(r.q9c||'').replace(/"/g,'""')}"`,
+    `"${(r.q10||'').replace(/"/g,'""')}"`,
+    `"${(r.q11||'').replace(/"/g,'""')}"`
+  ]);
+  const csv=[headers.join(','),...rows.map(r=>r.join(','))].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`spp-results-${Date.now()}.csv`;
+  a.click();
+}
+
+buildQuestions();
+</script>
+</body>
+</html>
